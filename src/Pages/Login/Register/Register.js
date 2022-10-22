@@ -1,11 +1,15 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
+import toast from 'react-hot-toast';
+import { Link } from 'react-router-dom';
 import { AuthContext } from '../../../contexts/AuthProvider/AuthProvider';
 
 const Register = () => {
 
-    const {createUser} = useContext(AuthContext);
+    const { createUser, userProfileUpdate, userEmailVarification } = useContext(AuthContext);
+    const [error, setError] = useState('')
+    const [accepted, setAccepted] = useState(false);
 
     const handleSubmit = event => {
         event.preventDefault();
@@ -17,12 +21,43 @@ const Register = () => {
         console.log(name, photoURL, email, password);
 
         createUser(email, password)
-        .then( result => {
-            const user = result.user;
-            console.log(user);
-            form.reset();
-        })
-        .catch( e => console.error(e));
+            .then(result => {
+                const user = result.user;
+                console.log(user);
+                setError('successfully register')
+                form.reset();
+                handleUpdateUser(name, photoURL);
+                handleEmailVarification();
+                toast.success('please verify your email');
+            })
+            .catch(e => {
+                console.error(e)
+                setError(e.message);
+            });
+    }
+
+    const handleUpdateUser = (name, photoURL) => {
+        const profile = {
+            displayName: name,
+            photoURL: photoURL
+        }
+        userProfileUpdate(profile)
+            .then(() => { })
+            .catch(error => {
+                console.error('error', error);
+            })
+    }
+    const handleAccepted = event => {
+        setAccepted(event.target.checked)
+        console.log(event.target.checked)
+    }
+
+    const handleEmailVarification = () => {
+        userEmailVarification()
+            .then(() => { })
+            .catch(error => {
+                console.error('error', error);
+            })
     }
 
     return (
@@ -45,12 +80,16 @@ const Register = () => {
                 <Form.Label>Password</Form.Label>
                 <Form.Control name="password" type="password" placeholder="Password" required />
             </Form.Group>
-
-            <Button variant="primary" type="submit">
+            <Form.Group className="mb-3" controlId="formBasicCheckbox">
+                <Form.Check type="checkbox"
+                    onClick={handleAccepted}
+                    label={<>check out the <Link to='/condition'>Terms and Conditions</Link></>} />
+            </Form.Group>
+            <Button variant="primary" type="submit" disabled={!accepted}>
                 Register
             </Button>
             <Form.Text className="text-danger">
-
+                {error}
             </Form.Text>
         </Form>
     );
